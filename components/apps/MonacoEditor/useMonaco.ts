@@ -1,12 +1,14 @@
 import { loader } from "@monaco-editor/react";
+import type { ContainerHookProps } from "components/apps/AppContainer";
 import {
+  URL_DELIMITER,
   config,
   theme,
-  URL_DELIMITER,
 } from "components/apps/MonacoEditor/config";
 import {
   detectLanguage,
   getSaveFileInfo,
+  relocateShadowRoot,
 } from "components/apps/MonacoEditor/functions";
 import type { Model } from "components/apps/MonacoEditor/types";
 import useTitle from "components/system/Window/useTitle";
@@ -22,12 +24,12 @@ import {
 import { getExtension } from "utils/functions";
 import { lockGlobal, unlockGlobal } from "utils/globals";
 
-const useMonaco = (
-  id: string,
-  url: string,
-  containerRef: React.MutableRefObject<HTMLDivElement | null>,
-  setLoading: React.Dispatch<React.SetStateAction<boolean>>
-): void => {
+const useMonaco = ({
+  containerRef,
+  id,
+  setLoading,
+  url,
+}: ContainerHookProps): void => {
   const { readFile, updateFolder, writeFile } = useFileSystem();
   const { argument: setArgument } = useProcesses();
   const { prependFileToTitle } = useTitle(id);
@@ -112,6 +114,11 @@ const useMonaco = (
         ?.addEventListener("focus", () => currentEditor.focus(), {
           passive: true,
         });
+
+      containerRef.current?.addEventListener("blur", relocateShadowRoot, {
+        capture: true,
+        passive: true,
+      });
 
       setEditor(currentEditor);
       setArgument(id, "editor", currentEditor);

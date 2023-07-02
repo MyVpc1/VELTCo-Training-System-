@@ -1,11 +1,11 @@
 import type { ComponentProcessProps } from "components/system/Apps/RenderComponent";
 import StyledOpenWith from "components/system/Dialogs/OpenWith/StyledOpenWith";
 import StyledOpenWithList from "components/system/Dialogs/OpenWith/StyledOpenWithList";
-import extensions from "components/system/Files/FileEntry/extensions";
+import { getProcessByFileExtension } from "components/system/Files/FileEntry/functions";
 import { useProcesses } from "contexts/process";
 import directory from "contexts/process/directory";
 import { useSession } from "contexts/session";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import Button from "styles/common/Button";
 import Icon from "styles/common/Icon";
 import { TRANSITIONS_IN_MILLISECONDS } from "utils/constants";
@@ -21,6 +21,7 @@ const EXCLUDED_PROCESSES = new Set([
   "FileExplorer",
   "IRC",
   "OpenWith",
+  "Properties",
   "Quake3",
   "Run",
   "SpaceCadet",
@@ -62,8 +63,7 @@ const OpenWith: FC<ComponentProcessProps> = ({ id }) => {
   const { foregroundId, setForegroundId } = useSession();
   const { url } = process || {};
   const urlExtension = url ? getExtension(url) : "";
-  const { process: [primaryExtensionProcesses] = [] } =
-    urlExtension in extensions ? extensions[urlExtension] : {};
+  const primaryExtensionProcesses = getProcessByFileExtension(urlExtension);
   const { title: primaryTitle, icon: primaryIcon } =
     (primaryExtensionProcesses && directory[primaryExtensionProcesses]) || {};
   const [selectedPid, setSelectedPid] = useState(primaryExtensionProcesses);
@@ -152,4 +152,4 @@ const OpenWith: FC<ComponentProcessProps> = ({ id }) => {
   );
 };
 
-export default OpenWith;
+export default memo(OpenWith);

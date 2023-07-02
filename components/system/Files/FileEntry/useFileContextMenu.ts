@@ -14,6 +14,7 @@ import type {
 import { useProcesses } from "contexts/process";
 import processDirectory from "contexts/process/directory";
 import { useSession } from "contexts/session";
+import { useProcessesRef } from "hooks/useProcessesRef";
 import { basename, dirname, extname, join } from "path";
 import { useMemo } from "react";
 import {
@@ -24,6 +25,7 @@ import {
   IMAGE_FILE_EXTENSIONS,
   MENU_SEPERATOR,
   MOUNTABLE_EXTENSIONS,
+  PROCESS_DELIMITER,
   ROOT_SHORTCUT,
   SHORTCUT_EXTENSION,
   SPREADSHEET_FORMATS,
@@ -62,8 +64,9 @@ const useFileContextMenu = (
   fileManagerId?: string,
   readOnly?: boolean
 ): ContextMenuCapture => {
-  const { open, url: changeUrl } = useProcesses();
-  const { setWallpaper } = useSession();
+  const { minimize, open, url: changeUrl } = useProcesses();
+  const processesRef = useProcessesRef();
+  const { setForegroundId, setWallpaper } = useSession();
   const baseName = basename(path);
   const isFocusedEntry = focusedEntries.includes(baseName);
   const openFile = useFile(url);
@@ -144,8 +147,24 @@ const useFileContextMenu = (
             { action: () => setRenaming(baseName), label: "Rename" },
             MENU_SEPERATOR,
             {
-              action: () =>
-                open("Properties", { isShortcut, shortcutPath: path, url }),
+              action: () => {
+                const activePid = Object.keys(processesRef.current).find(
+                  (p) => p === `Properties${PROCESS_DELIMITER}${url}`
+                );
+
+                if (activePid) {
+                  if (processesRef.current[activePid].minimized) {
+                    minimize(activePid);
+                  }
+
+                  setForegroundId(activePid);
+                } else {
+                  open("Properties", {
+                    shortcutPath: isShortcut ? path : undefined,
+                    url: isShortcut ? path : url,
+                  });
+                }
+              },
               label: "Properties",
             }
           );
@@ -536,16 +555,19 @@ const useFileContextMenu = (
       isFocusedEntry,
       lstat,
       mapFs,
+      minimize,
       moveEntries,
       newShortcut,
       open,
       openFile,
       path,
       pid,
+      processesRef,
       readFile,
       readOnly,
       rootFs?.mntMap,
       rootFs?.mountList,
+      setForegroundId,
       setRenaming,
       setWallpaper,
       unMapFs,
